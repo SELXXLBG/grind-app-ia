@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -10,6 +10,8 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
   const [booting, setBooting] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<"init" | "upgrade" | null>(null);
   
   // Refs for GSAP Scroll Animations
   const featuresRef = useRef(null);
@@ -58,11 +60,67 @@ export default function Home() {
     "SYSTEM READY."
   ];
 
+  const handleOpenModal = (type: "init" | "upgrade") => {
+    setModalType(type);
+    setModalOpen(true);
+  };
+
   return (
-    <main className="min-h-screen bg-background text-primary flex flex-col p-8 md:p-24 overflow-x-hidden relative selection:bg-primary selection:text-background">
+    <main className="min-h-screen bg-background text-primary flex flex-col p-4 md:p-12 lg:p-24 overflow-x-hidden relative selection:bg-primary selection:text-background">
       
       {/* 3D Matrix Background */}
       {!booting && <MatrixBackground />}
+
+      {/* Interactive Modal */}
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-[#050505] border-2 border-primary p-8 max-w-lg w-full relative shadow-[0_0_30px_rgba(0,255,65,0.2)]"
+            >
+              <button 
+                onClick={() => setModalOpen(false)}
+                className="absolute top-4 right-4 opacity-50 hover:opacity-100 font-mono text-xl"
+              >
+                [X]
+              </button>
+              
+              {modalType === "init" ? (
+                <>
+                  <h3 className="text-3xl font-bold font-mono uppercase mb-4 text-primary">System Initialization</h3>
+                  <div className="space-y-4 font-mono text-sm opacity-80 mb-8 border border-primary/30 p-4 bg-primary/5">
+                    <p>{">"} CONNECTING TO NEURAL LINK...</p>
+                    <p className="animate-pulse">{">"} WAITING FOR USER AUTHENTICATION...</p>
+                  </div>
+                  <button onClick={() => setModalOpen(false)} className="w-full bg-primary text-background py-3 font-bold font-mono uppercase hover:bg-background hover:text-primary border-2 border-primary transition-colors">
+                    Confirm Neural Link
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-3xl font-bold font-mono uppercase mb-4 text-primary">Unlock Battle Pass</h3>
+                  <div className="space-y-4 font-mono text-sm opacity-80 mb-8 border border-primary/30 p-4 bg-primary/5">
+                    <p>{">"} PROCESSING CRYPTO PAYMENT...</p>
+                    <p>TOTAL: 0.0042 ETH</p>
+                    <p className="text-destructive">{">"} ERROR: INSUFFICIENT FUNDS. PLEASE GRIND MORE IRL.</p>
+                  </div>
+                  <button onClick={() => setModalOpen(false)} className="w-full border-2 border-primary py-3 font-bold font-mono uppercase hover:bg-primary hover:text-background transition-colors">
+                    Acknowledge Defeat
+                  </button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="relative z-10 w-full max-w-5xl mx-auto">
         {/* Boot Sequence */}
@@ -96,7 +154,7 @@ export default function Home() {
           >
             {/* Header HUD */}
             <div className="flex justify-between items-center border-b border-primary/30 pb-4 mb-8 font-mono text-sm uppercase tracking-widest">
-              <img src="/assets/logo.png" alt="GRIND Logo" className="h-12" />
+              <img src="/icon.png" alt="GRIND Logo" className="h-16 md:h-24 mix-blend-screen" />
               <div className="animate-pulse flex items-center gap-2">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 STATUS: ONLINE
@@ -105,7 +163,7 @@ export default function Home() {
 
             {/* Hero Section */}
             <section className="mb-24">
-              <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-tighter leading-none" style={{ fontFamily: 'var(--font-vt323)' }}>
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold uppercase tracking-tighter leading-none" style={{ fontFamily: 'var(--font-vt323)' }}>
                 Your life is <br/> 
                 already a <span className="text-background bg-primary px-2">grind.</span>
               </h1>
@@ -116,6 +174,7 @@ export default function Home() {
 
               <div className="mt-12 flex flex-wrap gap-6 items-center">
                 <motion.button 
+                  onClick={() => handleOpenModal("init")}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className="bg-primary text-background px-8 py-4 font-bold uppercase tracking-widest text-lg border-2 border-primary hover:bg-background hover:text-primary transition-colors cursor-pointer"
@@ -164,24 +223,28 @@ export default function Home() {
                   </ul>
                 </div>
 
-                <div className="border border-primary/30 p-8 bg-primary/90 text-background relative overflow-hidden group">
-                  <img src="/assets/boss.png" alt="Raid Boss" className="absolute -bottom-4 -right-4 w-48 h-48 opacity-20 grayscale group-hover:opacity-50 transition-opacity mix-blend-multiply" />
-                  <h3 className="text-2xl font-bold mb-4 font-mono uppercase">Boss Fights: Deadlines</h3>
-                  <p className="opacity-80 font-mono text-sm leading-relaxed mb-6">
-                    A project due in 3 days? That's a raid boss. Team up with your Guild or face it solo. If you miss the deadline, you lose HP and your streak resets. High risk, high reward.
-                  </p>
-                  <div className="mt-4 border-2 border-background p-4">
-                    <div className="flex justify-between mb-2 font-bold font-mono text-sm uppercase">
-                      <span>Raid: Launch MVP</span>
-                      <span>HP: 15%</span>
-                    </div>
-                    <div className="w-full h-4 bg-background/20 rounded-none overflow-hidden">
-                      <motion.div 
-                        initial={{ width: "100%" }}
-                        whileInView={{ width: "15%" }}
-                        transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
-                        className="h-full bg-destructive"
-                      ></motion.div>
+                <div className="border border-primary/30 p-8 bg-primary/20 text-primary relative overflow-hidden group">
+                  {/* Fixed Boss Image with mix-blend-screen for black background removal */}
+                  <img src="/assets/boss.png" alt="Raid Boss" className="absolute -bottom-8 -right-8 w-64 h-64 opacity-60 group-hover:opacity-100 transition-opacity mix-blend-screen" />
+                  
+                  <div className="relative z-10">
+                    <h3 className="text-2xl font-bold mb-4 font-mono uppercase text-background bg-primary inline-block px-2">Boss Fights</h3>
+                    <p className="opacity-90 font-mono text-sm leading-relaxed mb-6 bg-background/80 p-2 border border-primary/30 backdrop-blur-md">
+                      A project due in 3 days? That's a raid boss. Team up with your Guild or face it solo. If you miss the deadline, you lose HP and your streak resets. High risk, high reward.
+                    </p>
+                    <div className="mt-4 border-2 border-primary p-4 bg-background/80 backdrop-blur-sm">
+                      <div className="flex justify-between mb-2 font-bold font-mono text-sm uppercase">
+                        <span>Raid: Launch MVP</span>
+                        <span className="text-destructive animate-pulse">HP: 15%</span>
+                      </div>
+                      <div className="w-full h-4 bg-primary/20 rounded-none overflow-hidden">
+                        <motion.div 
+                          initial={{ width: "100%" }}
+                          whileInView={{ width: "15%" }}
+                          transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
+                          className="h-full bg-destructive"
+                        ></motion.div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -200,6 +263,7 @@ export default function Home() {
                     Grinding alone is tough. Form a Guild with your coworkers or friends. Share passive XP buffs, coordinate on Team Quests, and compete in weekly PvP productivity sprints.
                   </p>
                   <motion.button 
+                    onClick={() => handleOpenModal("init")}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className="border border-primary px-6 py-3 font-mono hover:bg-primary hover:text-background transition-colors uppercase text-sm"
@@ -233,20 +297,21 @@ export default function Home() {
                 </div>
                 
                 {[
-                  { rank: 1, name: "ZeroCool", class: "Hacker", xp: "842,000" },
-                  { rank: 2, name: "AcidBurn", class: "Designer", xp: "790,500" },
-                  { rank: 3, name: "LordNikon", class: "Marketer", xp: "788,100" },
-                  { rank: 4, name: "CerealKiller", class: "Hustler", xp: "650,200" },
-                  { rank: 5, name: "Joey", class: "Noob", xp: "12,000" }
+                  { rank: 1, name: "ZeroCool", class: "Hacker", xp: "842,000", hue: "0deg" },
+                  { rank: 2, name: "AcidBurn", class: "Designer", xp: "790,500", hue: "90deg" },
+                  { rank: 3, name: "LordNikon", class: "Marketer", xp: "788,100", hue: "180deg" },
+                  { rank: 4, name: "CerealKiller", class: "Hustler", xp: "650,200", hue: "270deg" },
+                  { rank: 5, name: "Joey", class: "Noob", xp: "12,000", hue: "45deg" }
                 ].map((player, i) => (
-                  <div key={i} className={`grid grid-cols-4 font-mono p-4 border-b border-primary/10 ${i === 0 ? 'bg-primary/10 text-primary font-bold' : ''}`}>
+                  <div key={i} className={`grid grid-cols-4 font-mono p-4 border-b border-primary/10 hover:bg-primary/5 transition-colors ${i === 0 ? 'bg-primary/10 text-primary font-bold' : ''}`}>
                     <div className="col-span-1 flex items-center">#{player.rank}</div>
                     <div className="col-span-2 flex items-center gap-3">
-                      {player.rank === 1 ? (
-                        <img src="/assets/avatar.png" className="w-8 h-8 rounded-full border border-primary" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-primary/20"></div>
-                      )}
+                      <img 
+                        src="/assets/avatar.png" 
+                        alt={player.name}
+                        className="w-10 h-10 rounded-full border border-primary/50 mix-blend-screen"
+                        style={{ filter: `hue-rotate(${player.hue})` }} 
+                      />
                       <div className="flex flex-col">
                         <span>{player.name}</span>
                         <span className="text-xs opacity-50">{player.class}</span>
@@ -274,7 +339,7 @@ export default function Home() {
                     <li>{">"} 1 Guild max</li>
                     <li>{">"} Standard HUD</li>
                   </ul>
-                  <button className="w-full border border-primary py-3 mt-8 hover:bg-primary hover:text-background transition-colors font-mono uppercase text-sm">
+                  <button onClick={() => handleOpenModal("init")} className="w-full border border-primary py-3 mt-8 hover:bg-primary hover:text-background transition-colors font-mono uppercase text-sm">
                     Select
                   </button>
                 </div>
@@ -292,7 +357,7 @@ export default function Home() {
                     <li>{">"} Custom Neon HUDs</li>
                     <li>{">"} IRL Merch Rewards</li>
                   </ul>
-                  <button className="w-full bg-primary text-background py-3 mt-8 hover:opacity-90 transition-opacity font-bold font-mono uppercase text-sm shadow-[0_0_15px_rgba(0,255,65,0.5)]">
+                  <button onClick={() => handleOpenModal("upgrade")} className="w-full bg-primary text-background py-3 mt-8 hover:opacity-90 transition-opacity font-bold font-mono uppercase text-sm shadow-[0_0_15px_rgba(0,255,65,0.5)]">
                     Upgrade
                   </button>
                 </div>
@@ -306,7 +371,7 @@ export default function Home() {
                     <li>{">"} Dedicated Server</li>
                     <li>{">"} Custom AI Agent</li>
                   </ul>
-                  <button className="w-full border border-primary/30 py-3 mt-8 hover:border-primary transition-colors font-mono uppercase text-sm opacity-70">
+                  <button onClick={() => handleOpenModal("upgrade")} className="w-full border border-primary/30 py-3 mt-8 hover:border-primary transition-colors font-mono uppercase text-sm opacity-70">
                     Contact Sales
                   </button>
                 </div>
