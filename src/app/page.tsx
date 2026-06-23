@@ -96,7 +96,7 @@ export default function Home() {
           >
             {/* Header HUD */}
             <div className="flex justify-between items-center border-b border-primary/30 pb-4 mb-8 font-mono text-sm uppercase tracking-widest">
-              <div>[SYSTEM: GRIND]</div>
+              <img src="/assets/logo.png" alt="GRIND Logo" className="h-12" />
               <div className="animate-pulse flex items-center gap-2">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
                 STATUS: ONLINE
@@ -165,6 +165,7 @@ export default function Home() {
                 </div>
 
                 <div className="border border-primary/30 p-8 bg-primary/90 text-background relative overflow-hidden group">
+                  <img src="/assets/boss.png" alt="Raid Boss" className="absolute -bottom-4 -right-4 w-48 h-48 opacity-20 grayscale group-hover:opacity-50 transition-opacity mix-blend-multiply" />
                   <h3 className="text-2xl font-bold mb-4 font-mono uppercase">Boss Fights: Deadlines</h3>
                   <p className="opacity-80 font-mono text-sm leading-relaxed mb-6">
                     A project due in 3 days? That's a raid boss. Team up with your Guild or face it solo. If you miss the deadline, you lose HP and your streak resets. High risk, high reward.
@@ -240,9 +241,16 @@ export default function Home() {
                 ].map((player, i) => (
                   <div key={i} className={`grid grid-cols-4 font-mono p-4 border-b border-primary/10 ${i === 0 ? 'bg-primary/10 text-primary font-bold' : ''}`}>
                     <div className="col-span-1 flex items-center">#{player.rank}</div>
-                    <div className="col-span-2 flex flex-col">
-                      <span>{player.name}</span>
-                      <span className="text-xs opacity-50">{player.class}</span>
+                    <div className="col-span-2 flex items-center gap-3">
+                      {player.rank === 1 ? (
+                        <img src="/assets/avatar.png" className="w-8 h-8 rounded-full border border-primary" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary/20"></div>
+                      )}
+                      <div className="flex flex-col">
+                        <span>{player.name}</span>
+                        <span className="text-xs opacity-50">{player.class}</span>
+                      </div>
                     </div>
                     <div className="col-span-1 text-right flex items-center justify-end">{player.xp}</div>
                   </div>
