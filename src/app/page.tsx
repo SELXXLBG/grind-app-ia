@@ -1,10 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import MatrixBackground from "@/components/MatrixBackground";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
   const [booting, setBooting] = useState(true);
+  
+  // Refs for GSAP Scroll Animations
+  const featuresRef = useRef(null);
+  const guildsRef = useRef(null);
+  const leaderboardRef = useRef(null);
+  const pricingRef = useRef(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -12,6 +23,33 @@ export default function Home() {
     }, 2500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Set up GSAP animations once booting is done
+  useEffect(() => {
+    if (booting) return;
+
+    const sections = [featuresRef, guildsRef, leaderboardRef, pricingRef];
+    
+    sections.forEach((secRef) => {
+      if (secRef.current) {
+        gsap.fromTo(
+          secRef.current,
+          { opacity: 0, y: 50 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: secRef.current,
+              start: "top 80%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
+      }
+    });
+  }, [booting]);
 
   const terminalLines = [
     "INITIALIZING GRIND OS v1.0.0...",
@@ -23,11 +61,8 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background text-primary flex flex-col p-8 md:p-24 overflow-x-hidden relative selection:bg-primary selection:text-background">
       
-      {/* Background Grid */}
-      <div className="fixed inset-0 z-0 opacity-10 pointer-events-none" style={{
-        backgroundImage: `linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)`,
-        backgroundSize: '40px 40px'
-      }}></div>
+      {/* 3D Matrix Background */}
+      {!booting && <MatrixBackground />}
 
       <div className="relative z-10 w-full max-w-5xl mx-auto">
         {/* Boot Sequence */}
@@ -54,9 +89,9 @@ export default function Home() {
           </div>
         ) : (
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
             className="flex flex-col gap-12 mt-12"
           >
             {/* Header HUD */}
@@ -94,14 +129,14 @@ export default function Home() {
               </div>
 
               {/* Stats HUD */}
-              <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-primary/30 pt-8">
+              <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-primary/30 pt-8 backdrop-blur-sm bg-background/50">
                 {[
                   { label: "EXP MULTIPLIER", val: "x2.5" },
                   { label: "ACTIVE QUESTS", val: "14" },
                   { label: "GUILD MEMBERS", val: "1,042" },
                   { label: "BOSS DEFEATED", val: "89" }
                 ].map((stat, i) => (
-                  <div key={i} className="flex flex-col border border-primary/20 p-4 bg-primary/5 hover:bg-primary/10 transition-colors">
+                  <div key={i} className="flex flex-col border border-primary/20 p-4 hover:bg-primary/10 transition-colors">
                     <span className="text-xs opacity-60 mb-2 font-mono">{stat.label}</span>
                     <span className="text-2xl font-bold font-mono" style={{ fontFamily: 'var(--font-vt323)' }}>{stat.val}</span>
                   </div>
@@ -110,13 +145,13 @@ export default function Home() {
             </section>
 
             {/* Features / Quests Section */}
-            <section id="features" className="py-24 border-t border-primary/30">
+            <section id="features" ref={featuresRef} className="py-24 border-t border-primary/30 backdrop-blur-sm bg-background/30">
               <h2 className="text-4xl md:text-5xl font-bold uppercase mb-12" style={{ fontFamily: 'var(--font-vt323)' }}>
                 [01] Daily Quests & Boss Fights
               </h2>
               
               <div className="grid md:grid-cols-2 gap-8">
-                <div className="border border-primary/30 p-8 bg-background relative overflow-hidden group">
+                <div className="border border-primary/30 p-8 bg-background/80 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-30 font-mono text-6xl group-hover:opacity-100 transition-opacity">!</div>
                   <h3 className="text-2xl font-bold mb-4 font-mono uppercase">Track your habits as Quests</h3>
                   <p className="opacity-80 font-mono text-sm leading-relaxed mb-6">
@@ -129,7 +164,7 @@ export default function Home() {
                   </ul>
                 </div>
 
-                <div className="border border-primary/30 p-8 bg-primary text-background relative overflow-hidden group">
+                <div className="border border-primary/30 p-8 bg-primary/90 text-background relative overflow-hidden group">
                   <h3 className="text-2xl font-bold mb-4 font-mono uppercase">Boss Fights: Deadlines</h3>
                   <p className="opacity-80 font-mono text-sm leading-relaxed mb-6">
                     A project due in 3 days? That's a raid boss. Team up with your Guild or face it solo. If you miss the deadline, you lose HP and your streak resets. High risk, high reward.
@@ -143,7 +178,7 @@ export default function Home() {
                       <motion.div 
                         initial={{ width: "100%" }}
                         whileInView={{ width: "15%" }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
+                        transition={{ duration: 1.5, ease: "easeOut", delay: 0.5 }}
                         className="h-full bg-destructive"
                       ></motion.div>
                     </div>
@@ -153,12 +188,12 @@ export default function Home() {
             </section>
 
             {/* Guilds Section */}
-            <section className="py-24 border-t border-primary/30">
+            <section ref={guildsRef} className="py-24 border-t border-primary/30 backdrop-blur-sm bg-background/30">
               <h2 className="text-4xl md:text-5xl font-bold uppercase mb-12" style={{ fontFamily: 'var(--font-vt323)' }}>
                 [02] Guilds & Multiplayer
               </h2>
               
-              <div className="flex flex-col md:flex-row gap-8 items-center border border-primary/30 p-8">
+              <div className="flex flex-col md:flex-row gap-8 items-center border border-primary/30 p-8 bg-background/80">
                 <div className="flex-1">
                   <p className="text-xl font-mono mb-6">
                     Grinding alone is tough. Form a Guild with your coworkers or friends. Share passive XP buffs, coordinate on Team Quests, and compete in weekly PvP productivity sprints.
@@ -183,8 +218,95 @@ export default function Home() {
               </div>
             </section>
 
+            {/* Leaderboard Section */}
+            <section ref={leaderboardRef} className="py-24 border-t border-primary/30 backdrop-blur-sm bg-background/30">
+              <h2 className="text-4xl md:text-5xl font-bold uppercase mb-12 text-center" style={{ fontFamily: 'var(--font-vt323)' }}>
+                [03] Global Rankings
+              </h2>
+              
+              <div className="max-w-3xl mx-auto border border-primary/30 bg-background/80">
+                <div className="grid grid-cols-4 font-mono text-xs uppercase opacity-50 p-4 border-b border-primary/30">
+                  <div className="col-span-1">Rank</div>
+                  <div className="col-span-2">Player / Class</div>
+                  <div className="col-span-1 text-right">XP</div>
+                </div>
+                
+                {[
+                  { rank: 1, name: "ZeroCool", class: "Hacker", xp: "842,000" },
+                  { rank: 2, name: "AcidBurn", class: "Designer", xp: "790,500" },
+                  { rank: 3, name: "LordNikon", class: "Marketer", xp: "788,100" },
+                  { rank: 4, name: "CerealKiller", class: "Hustler", xp: "650,200" },
+                  { rank: 5, name: "Joey", class: "Noob", xp: "12,000" }
+                ].map((player, i) => (
+                  <div key={i} className={`grid grid-cols-4 font-mono p-4 border-b border-primary/10 ${i === 0 ? 'bg-primary/10 text-primary font-bold' : ''}`}>
+                    <div className="col-span-1 flex items-center">#{player.rank}</div>
+                    <div className="col-span-2 flex flex-col">
+                      <span>{player.name}</span>
+                      <span className="text-xs opacity-50">{player.class}</span>
+                    </div>
+                    <div className="col-span-1 text-right flex items-center justify-end">{player.xp}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Pricing Section */}
+            <section ref={pricingRef} className="py-24 border-t border-primary/30 backdrop-blur-sm bg-background/30 mb-24">
+              <h2 className="text-4xl md:text-5xl font-bold uppercase mb-12 text-center" style={{ fontFamily: 'var(--font-vt323)' }}>
+                [ INSERT COIN TO CONTINUE ]
+              </h2>
+              
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Free */}
+                <div className="border border-primary/30 p-8 flex flex-col bg-background/80">
+                  <h3 className="text-2xl font-bold mb-2 font-mono uppercase text-center">F2P (Free)</h3>
+                  <div className="text-4xl font-bold text-center mb-8" style={{ fontFamily: 'var(--font-vt323)' }}>$0</div>
+                  <ul className="space-y-4 font-mono text-sm opacity-80 flex-1">
+                    <li>{">"} Basic Quests</li>
+                    <li>{">"} 1 Guild max</li>
+                    <li>{">"} Standard HUD</li>
+                  </ul>
+                  <button className="w-full border border-primary py-3 mt-8 hover:bg-primary hover:text-background transition-colors font-mono uppercase text-sm">
+                    Select
+                  </button>
+                </div>
+                
+                {/* Battle Pass */}
+                <div className="border-2 border-primary p-8 flex flex-col bg-primary/10 relative transform md:-translate-y-4">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-background px-4 py-1 text-xs font-bold uppercase font-mono">
+                    Most Popular
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2 font-mono uppercase text-center text-primary">Battle Pass</h3>
+                  <div className="text-4xl font-bold text-center mb-8" style={{ fontFamily: 'var(--font-vt323)' }}>$12<span className="text-sm opacity-50">/mo</span></div>
+                  <ul className="space-y-4 font-mono text-sm opacity-90 flex-1">
+                    <li>{">"} Unlimited Boss Fights</li>
+                    <li>{">"} Create 5 Guilds</li>
+                    <li>{">"} Custom Neon HUDs</li>
+                    <li>{">"} IRL Merch Rewards</li>
+                  </ul>
+                  <button className="w-full bg-primary text-background py-3 mt-8 hover:opacity-90 transition-opacity font-bold font-mono uppercase text-sm shadow-[0_0_15px_rgba(0,255,65,0.5)]">
+                    Upgrade
+                  </button>
+                </div>
+
+                {/* God Mode */}
+                <div className="border border-primary/30 p-8 flex flex-col bg-background/80">
+                  <h3 className="text-2xl font-bold mb-2 font-mono uppercase text-center opacity-70">God Mode</h3>
+                  <div className="text-4xl font-bold text-center mb-8 opacity-70" style={{ fontFamily: 'var(--font-vt323)' }}>$99<span className="text-sm opacity-50">/mo</span></div>
+                  <ul className="space-y-4 font-mono text-sm opacity-60 flex-1">
+                    <li>{">"} Enterprise API</li>
+                    <li>{">"} Dedicated Server</li>
+                    <li>{">"} Custom AI Agent</li>
+                  </ul>
+                  <button className="w-full border border-primary/30 py-3 mt-8 hover:border-primary transition-colors font-mono uppercase text-sm opacity-70">
+                    Contact Sales
+                  </button>
+                </div>
+              </div>
+            </section>
+
             {/* Footer */}
-            <footer className="border-t border-primary/30 pt-8 pb-12 mt-12 text-center font-mono text-sm opacity-50 flex justify-between uppercase">
+            <footer className="border-t border-primary/30 pt-8 pb-12 text-center font-mono text-sm opacity-50 flex justify-between uppercase">
               <span>GRIND OS © 2026</span>
               <span>CONNECTION SECURE</span>
             </footer>
