@@ -575,7 +575,15 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
     const next = [...morningChecked, id];
     setMorningChecked(next);
     gainXp(75);
-    addLog(`[ROUTINE] "${MORNING_ROUTINE[idx].label}" +75 XP`);
+    
+    const dmg = 5;
+    setBossHp(prev => Math.max(0, parseFloat((prev - dmg).toFixed(1))));
+    
+    addLog(`[ROUTINE] "${MORNING_ROUTINE[idx].label}" +75 XP | Boss -${dmg}HP`);
+    if (bossRef.current) {
+      gsap.fromTo(bossRef.current, { x: -10 }, { x: 10, duration: 0.08, yoyo: true, repeat: 7, onComplete: () => gsap.set(bossRef.current, { x: 0 }) });
+    }
+
     if (next.length === MORNING_ROUTINE.length) {
       addLog(`[🌅 MORNING DONE] Streak: ${streak + 1}🔥 All quests unlocked.`);
       setStreak(s => s + 1);
