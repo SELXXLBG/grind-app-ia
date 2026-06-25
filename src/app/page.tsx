@@ -484,6 +484,51 @@ function ProfileTab({ profile, setProfile }: { profile: PlayerProfile; setProfil
 }
 
 // ==========================================
+// AUDIO & FX SYSTEM
+// ==========================================
+const playSound = (type: 'xp' | 'hit' | 'levelup') => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    if (type === 'xp') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'hit') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    } else if (type === 'levelup') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.setValueAtTime(554.37, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+    }
+  } catch(e) {
+    console.error("Audio block: ", e);
+  }
+};
+
+type Particle = { id: number; x: number; y: number; text: string; color: string; };
+
+// ==========================================
 // DASHBOARD VIEW
 // ==========================================
 type DashTab = 'hud' | 'quests' | 'deepwork' | 'profile';
@@ -507,6 +552,15 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
   const [dwSessions, setDwSessions] = useState(0);
   const [tab, setTab] = useState<DashTab>('hud');
   const [levelUpFlash, setLevelUpFlash] = useState(false);
+  const [particles, setParticles] = useState<Particle[]>([]);
+
+  const spawnParticle = (e: React.MouseEvent, text: string, color: string) => {
+    const newP = { id: Date.now() + Math.random(), x: e.clientX, y: e.clientY, text, color };
+    setParticles(prev => [...prev, newP]);
+    setTimeout(() => {
+      setParticles(prev => prev.filter(p => p.id !== newP.id));
+    }, 1000);
+  };
 
   const dwInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const bossRef = useRef<HTMLImageElement>(null);
@@ -535,6 +589,7 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
         newLevel += 1;
         setLevel(newLevel);
         setLevelUpFlash(true);
+        playSound('levelup');
         setTimeout(() => setLevelUpFlash(false), 2000);
         addLog(`[⬆ LEVEL UP] You reached Level ${newLevel}!`);
       }
@@ -568,13 +623,16 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
     return () => { if (dwInterval.current) clearInterval(dwInterval.current); };
   }, [dwRunning, dwOnBreak, gainXp]);
 
-  const handleMorningCheck = (id: string) => {
+  const handleMorningCheck = (id: string, e: React.MouseEvent) => {
     const idx = MORNING_ROUTINE.findIndex(r => r.id === id);
     if (idx > 0 && !morningChecked.includes(MORNING_ROUTINE[idx - 1].id)) return;
     if (morningChecked.includes(id)) return;
     const next = [...morningChecked, id];
     setMorningChecked(next);
     gainXp(75);
+    playSound('xp');
+    setTimeout(() => playSound('hit'), 100);
+    spawnParticle(e, '+75 XP', accent.hex);
     
     const dmg = 10;
     setBossHp(prev => Math.max(0, parseFloat((prev - dmg).toFixed(1))));
@@ -590,13 +648,17 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  const handleQuestCycle = (id: number) => {
+  const handleQuestCycle = (id: number, e: React.MouseEvent) => {
     const quest = quests.find(q => q.id === id);
     if (!quest || quest.locked) return;
     const cycle: QuestStatus[] = ['todo', 'inprogress', 'done'];
     const nextStatus = cycle[(cycle.indexOf(quest.status) + 1) % cycle.length];
     if (nextStatus === 'done' && quest.status !== 'done') {
       gainXp(quest.xp);
+      playSound('xp');
+      setTimeout(() => playSound('hit'), 150);
+      spawnParticle(e, `+${quest.xp} XP`, accent.hex);
+      
       const dmg = Math.min(30, quest.xp / 16);
       setBossHp(prev => Math.max(0, parseFloat((prev - dmg).toFixed(1))));
       addLog(`[QUEST ✓] "${quest.title}" +${quest.xp} XP | Boss -${dmg.toFixed(0)}HP`);
@@ -621,6 +683,21 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="relative z-10 w-full max-w-5xl mx-auto mt-4 flex flex-col font-mono">
+      {/* Floating Particles */}
+      <AnimatePresence>
+        {particles.map(p => (
+          <motion.div key={p.id}
+            initial={{ opacity: 1, y: p.y, x: p.x - 20, scale: 0.5 }}
+            animate={{ opacity: 0, y: p.y - 80, scale: 1.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="fixed pointer-events-none z-[100] font-bold font-mono text-2xl"
+            style={{ color: p.color, textShadow: `0 0 15px ${p.color}` }}>
+            {p.text}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
       {/* Level Up Flash */}
       <AnimatePresence>
         {levelUpFlash && (
@@ -712,7 +789,7 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                       const isNext = !done && (idx === 0 || morningChecked.includes(MORNING_ROUTINE[idx - 1].id));
                       const locked = !done && !isNext;
                       return (
-                        <button key={item.id} onClick={() => handleMorningCheck(item.id)} disabled={locked || done}
+                        <button key={item.id} onClick={(e) => handleMorningCheck(item.id, e)} disabled={locked || done}
                           className={`w-full flex items-center gap-3 p-3 border text-left transition-all duration-200 ${done ? 'border-primary/10 opacity-30 cursor-default' : isNext ? 'cursor-pointer hover:bg-primary/5' : 'border-primary/5 opacity-15 cursor-not-allowed'}`}
                           style={{ borderColor: done ? undefined : isNext ? `${accent.hex}30` : undefined }}>
                           <div className="w-5 h-5 flex-shrink-0 border flex items-center justify-center transition-all" style={{ borderColor: done ? accent.hex : isNext ? `${accent.hex}60` : 'rgba(255,255,255,0.15)', background: done ? accent.hex : 'transparent' }}>
@@ -762,7 +839,7 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                       const borderColors: Record<QuestStatus, string> = { todo: 'rgba(255,255,255,0.06)', inprogress: 'rgba(251,146,60,0.3)', done: `${accent.hex}25` };
 
                       return (
-                        <button key={q.id} onClick={() => handleQuestCycle(q.id)} disabled={q.locked}
+                        <button key={q.id} onClick={(e) => handleQuestCycle(q.id, e)} disabled={q.locked}
                           className={`w-full flex items-center gap-4 p-4 border text-left transition-all duration-200 ${q.locked ? 'opacity-10 cursor-not-allowed' : q.status === 'done' ? 'cursor-default' : 'cursor-pointer hover:brightness-125'}`}
                           style={{ borderColor: q.locked ? 'rgba(255,255,255,0.04)' : borderColors[q.status], background: bgColors[q.status] }}>
 
