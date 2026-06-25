@@ -577,7 +577,8 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
   }, [logs]);
 
   useEffect(() => {
-    setQuests(prev => prev.map((q, i) => ({ ...q, locked: i === 0 ? false : !morningDone && i > 0 })));
+    // Quests are no longer locked by morning routine
+    setQuests(prev => prev.map((q) => ({ ...q, locked: false })));
   }, [morningDone]);
 
   const gainXp = useCallback((amount: number) => {
@@ -809,7 +810,7 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                       className="mt-4 border p-3 text-center text-sm font-bold"
                       style={{ borderColor: `${accent.hex}40`, background: `${accent.hex}08`, color: accent.hex }}>
-                      ✓ Morning Protocol Complete — All Quests Unlocked
+                      ✓ Morning Protocol Complete
                     </motion.div>
                   )}
                 </motion.div>
@@ -826,12 +827,6 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                       </div>
                     </div>
                   </div>
-
-                  {!morningDone && (
-                    <div className="border border-[#fb923c]/20 bg-[#fb923c]/5 p-3 mb-5 text-[#fb923c] text-xs font-mono flex items-center gap-2">
-                      <span className="text-base">⚠</span> Complete morning routine first to unlock all quests.
-                    </div>
-                  )}
 
                   <div className="space-y-2">
                     {quests.map(q => {
