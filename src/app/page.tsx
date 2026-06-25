@@ -51,7 +51,7 @@ const DEFAULT_PROFILE: PlayerProfile = {
   bio: '',
 };
 
-const MORNING_ROUTINE = [
+const INITIAL_MORNING_ROUTINE = [
   { id: 'm1', label: 'Power off phone for 1 hour', duration: '60 min' },
   { id: 'm2', label: 'Drink 500ml water + cold shower', duration: '5 min' },
   { id: 'm3', label: 'Physical warmup (20 push-ups)', duration: '5 min' },
@@ -545,7 +545,11 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
     '[QUEST] 4 active missions detected.',
   ]);
   const [morningChecked, setMorningChecked] = useState<string[]>([]);
+  const [routine, setRoutine] = useState(INITIAL_MORNING_ROUTINE);
   const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
+  
+  const [newRoutine, setNewRoutine] = useState('');
+  const [newQuest, setNewQuest] = useState('');
   const [dwRunning, setDwRunning] = useState(false);
   const [dwTimeLeft, setDwTimeLeft] = useState(DEEP_WORK_DURATION);
   const [dwOnBreak, setDwOnBreak] = useState(false);
@@ -566,7 +570,7 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
   const bossRef = useRef<HTMLImageElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  const morningDone = morningChecked.length === MORNING_ROUTINE.length;
+  const morningDone = routine.length > 0 && morningChecked.length === routine.length;
   const dayScore = getDayScore(morningDone, quests, dwSessions);
   const accent = profile.accent;
 
@@ -625,8 +629,8 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
   }, [dwRunning, dwOnBreak, gainXp]);
 
   const handleMorningCheck = (id: string, e: React.MouseEvent) => {
-    const idx = MORNING_ROUTINE.findIndex(r => r.id === id);
-    if (idx > 0 && !morningChecked.includes(MORNING_ROUTINE[idx - 1].id)) return;
+    const idx = routine.findIndex(r => r.id === id);
+    if (idx > 0 && !morningChecked.includes(routine[idx - 1].id)) return;
     if (morningChecked.includes(id)) return;
     const next = [...morningChecked, id];
     setMorningChecked(next);
@@ -638,15 +642,29 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
     const dmg = 10;
     setBossHp(prev => Math.max(0, parseFloat((prev - dmg).toFixed(1))));
     
-    addLog(`[ROUTINE] "${MORNING_ROUTINE[idx].label}" +75 XP | Boss -${dmg}HP`);
+    addLog(`[ROUTINE] "${routine[idx].label}" +75 XP | Boss -${dmg}HP`);
     if (bossRef.current) {
       gsap.fromTo(bossRef.current, { x: -15, y: 5 }, { x: 15, y: -5, duration: 0.05, yoyo: true, repeat: 9, onComplete: () => gsap.set(bossRef.current, { x: 0, y: 0 }) });
     }
 
-    if (next.length === MORNING_ROUTINE.length) {
+    if (next.length === routine.length) {
       addLog(`[🌅 MORNING DONE] Streak: ${streak + 1}🔥 All quests unlocked.`);
       setStreak(s => s + 1);
     }
+  };
+
+  const handleAddRoutine = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoutine.trim()) return;
+    setRoutine(prev => [...prev, { id: 'm' + Date.now(), label: newRoutine.trim(), duration: 'N/A' }]);
+    setNewRoutine('');
+  };
+
+  const handleAddQuest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQuest.trim()) return;
+    setQuests(prev => [...prev, { id: Date.now(), title: newQuest.trim(), xp: 100, status: 'todo', locked: false }]);
+    setNewQuest('');
   };
 
   const handleQuestCycle = (id: number, e: React.MouseEvent) => {
@@ -776,18 +794,18 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                       color: morningDone ? accent.hex : undefined,
                       background: morningDone ? `${accent.hex}10` : 'transparent',
                     }}>
-                      {morningChecked.length}/{MORNING_ROUTINE.length}
+                      {morningChecked.length}/{routine.length}
                     </span>
                   </div>
                   <div className="h-1 bg-black/50 mb-5 overflow-hidden">
                     <motion.div className="h-full" style={{ background: accent.hex, boxShadow: `0 0 8px ${accent.glow}` }}
-                      animate={{ width: `${(morningChecked.length / MORNING_ROUTINE.length) * 100}%` }}
+                      animate={{ width: `${(morningChecked.length / Math.max(1, routine.length)) * 100}%` }}
                       transition={{ type: "spring", bounce: 0 }} />
                   </div>
                   <div className="space-y-2">
-                    {MORNING_ROUTINE.map((item, idx) => {
+                    {routine.map((item, idx) => {
                       const done = morningChecked.includes(item.id);
-                      const isNext = !done && (idx === 0 || morningChecked.includes(MORNING_ROUTINE[idx - 1].id));
+                      const isNext = !done && (idx === 0 || morningChecked.includes(routine[idx - 1].id));
                       const locked = !done && !isNext;
                       return (
                         <button key={item.id} onClick={(e) => handleMorningCheck(item.id, e)} disabled={locked || done}
@@ -806,6 +824,13 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                       );
                     })}
                   </div>
+                  <form onSubmit={handleAddRoutine} className="mt-4 flex gap-2">
+                    <input value={newRoutine} onChange={e => setNewRoutine(e.target.value)}
+                      placeholder="Add routine item..." maxLength={40}
+                      className="flex-1 bg-black/50 border border-primary/20 px-3 py-2 text-xs font-mono outline-none focus:border-primary transition-colors" />
+                    <button type="submit" className="border border-primary/20 px-3 py-2 text-xs font-mono hover:bg-primary/10 transition-colors">+</button>
+                  </form>
+                  
                   {morningDone && (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                       className="mt-4 border p-3 text-center text-sm font-bold"
@@ -861,6 +886,13 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                       );
                     })}
                   </div>
+                  
+                  <form onSubmit={handleAddQuest} className="mt-4 flex gap-2">
+                    <input value={newQuest} onChange={e => setNewQuest(e.target.value)}
+                      placeholder="Add new quest..." maxLength={60}
+                      className="flex-1 bg-black/50 border border-primary/20 px-3 py-3 text-sm font-mono outline-none focus:border-primary transition-colors" />
+                    <button type="submit" className="border border-primary/20 px-4 py-3 text-sm font-mono hover:bg-primary/10 transition-colors uppercase tracking-widest font-bold">Add</button>
+                  </form>
                 </motion.div>
               )}
             </div>
