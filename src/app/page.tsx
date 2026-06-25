@@ -576,12 +576,12 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
     setMorningChecked(next);
     gainXp(75);
     
-    const dmg = 5;
+    const dmg = 10;
     setBossHp(prev => Math.max(0, parseFloat((prev - dmg).toFixed(1))));
     
     addLog(`[ROUTINE] "${MORNING_ROUTINE[idx].label}" +75 XP | Boss -${dmg}HP`);
     if (bossRef.current) {
-      gsap.fromTo(bossRef.current, { x: -10 }, { x: 10, duration: 0.08, yoyo: true, repeat: 7, onComplete: () => gsap.set(bossRef.current, { x: 0 }) });
+      gsap.fromTo(bossRef.current, { x: -15, y: 5 }, { x: 15, y: -5, duration: 0.05, yoyo: true, repeat: 9, onComplete: () => gsap.set(bossRef.current, { x: 0, y: 0 }) });
     }
 
     if (next.length === MORNING_ROUTINE.length) {
@@ -681,58 +681,119 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
-        {/* ── HUD TAB ── */}
-        {tab === 'hud' && (
-          <motion.div key="hud" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="grid lg:grid-cols-2 gap-5">
-            {/* Morning Routine */}
-            <div className="border border-primary/20 bg-[#070707] p-5 neon-border-subtle">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="uppercase font-bold tracking-widest" style={{ fontFamily: 'var(--font-vt323)', fontSize: '1.6rem' }}>☀ Morning Routine</h3>
-                <span className="text-xs px-3 py-1 border font-bold uppercase" style={{
-                  borderColor: morningDone ? `${accent.hex}60` : 'rgba(255,255,255,0.1)',
-                  color: morningDone ? accent.hex : undefined,
-                  background: morningDone ? `${accent.hex}10` : 'transparent',
-                }}>
-                  {morningChecked.length}/{MORNING_ROUTINE.length}
-                </span>
-              </div>
-              <div className="h-1 bg-black/50 mb-5 overflow-hidden">
-                <motion.div className="h-full" style={{ background: accent.hex, boxShadow: `0 0 8px ${accent.glow}` }}
-                  animate={{ width: `${(morningChecked.length / MORNING_ROUTINE.length) * 100}%` }}
-                  transition={{ type: "spring", bounce: 0 }} />
-              </div>
-              <div className="space-y-2">
-                {MORNING_ROUTINE.map((item, idx) => {
-                  const done = morningChecked.includes(item.id);
-                  const isNext = !done && (idx === 0 || morningChecked.includes(MORNING_ROUTINE[idx - 1].id));
-                  const locked = !done && !isNext;
-                  return (
-                    <button key={item.id} onClick={() => handleMorningCheck(item.id)} disabled={locked || done}
-                      className={`w-full flex items-center gap-3 p-3 border text-left transition-all duration-200 ${done ? 'border-primary/10 opacity-30 cursor-default' : isNext ? 'cursor-pointer hover:bg-primary/5' : 'border-primary/5 opacity-15 cursor-not-allowed'}`}
-                      style={{ borderColor: done ? undefined : isNext ? `${accent.hex}30` : undefined }}>
-                      <div className="w-5 h-5 flex-shrink-0 border flex items-center justify-center transition-all" style={{ borderColor: done ? accent.hex : isNext ? `${accent.hex}60` : 'rgba(255,255,255,0.15)', background: done ? accent.hex : 'transparent' }}>
-                        {done && <span className="text-background text-[10px] font-black">✓</span>}
-                        {isNext && !done && <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2 }} className="w-1.5 h-1.5" style={{ background: accent.hex }} />}
+        {/* ── HUD & QUESTS SHARED LAYOUT ── */}
+        {(tab === 'hud' || tab === 'quests') && (
+          <motion.div key="hud-quests" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="grid lg:grid-cols-2 gap-5">
+            
+            {/* ── LEFT COLUMN ── */}
+            <div className="flex flex-col gap-5">
+              
+              {/* MORNING ROUTINE */}
+              {tab === 'hud' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border border-primary/20 bg-[#070707] p-5 neon-border-subtle">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="uppercase font-bold tracking-widest" style={{ fontFamily: 'var(--font-vt323)', fontSize: '1.6rem' }}>☀ Morning Routine</h3>
+                    <span className="text-xs px-3 py-1 border font-bold uppercase" style={{
+                      borderColor: morningDone ? `${accent.hex}60` : 'rgba(255,255,255,0.1)',
+                      color: morningDone ? accent.hex : undefined,
+                      background: morningDone ? `${accent.hex}10` : 'transparent',
+                    }}>
+                      {morningChecked.length}/{MORNING_ROUTINE.length}
+                    </span>
+                  </div>
+                  <div className="h-1 bg-black/50 mb-5 overflow-hidden">
+                    <motion.div className="h-full" style={{ background: accent.hex, boxShadow: `0 0 8px ${accent.glow}` }}
+                      animate={{ width: `${(morningChecked.length / MORNING_ROUTINE.length) * 100}%` }}
+                      transition={{ type: "spring", bounce: 0 }} />
+                  </div>
+                  <div className="space-y-2">
+                    {MORNING_ROUTINE.map((item, idx) => {
+                      const done = morningChecked.includes(item.id);
+                      const isNext = !done && (idx === 0 || morningChecked.includes(MORNING_ROUTINE[idx - 1].id));
+                      const locked = !done && !isNext;
+                      return (
+                        <button key={item.id} onClick={() => handleMorningCheck(item.id)} disabled={locked || done}
+                          className={`w-full flex items-center gap-3 p-3 border text-left transition-all duration-200 ${done ? 'border-primary/10 opacity-30 cursor-default' : isNext ? 'cursor-pointer hover:bg-primary/5' : 'border-primary/5 opacity-15 cursor-not-allowed'}`}
+                          style={{ borderColor: done ? undefined : isNext ? `${accent.hex}30` : undefined }}>
+                          <div className="w-5 h-5 flex-shrink-0 border flex items-center justify-center transition-all" style={{ borderColor: done ? accent.hex : isNext ? `${accent.hex}60` : 'rgba(255,255,255,0.15)', background: done ? accent.hex : 'transparent' }}>
+                            {done && <span className="text-background text-[10px] font-black">✓</span>}
+                            {isNext && !done && <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.2 }} className="w-1.5 h-1.5" style={{ background: accent.hex }} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm ${done ? 'line-through opacity-40' : ''}`}>{item.label}</div>
+                            <div className="text-[10px] opacity-40 mt-0.5">{item.duration} · +75 XP · ⚔ -10 HP</div>
+                          </div>
+                          {isNext && <span className="text-[9px] border px-2 py-0.5 uppercase flex-shrink-0 font-bold" style={{ borderColor: `${accent.hex}40`, color: accent.hex }}>Next</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {morningDone && (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                      className="mt-4 border p-3 text-center text-sm font-bold"
+                      style={{ borderColor: `${accent.hex}40`, background: `${accent.hex}08`, color: accent.hex }}>
+                      ✓ Morning Protocol Complete — All Quests Unlocked
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* QUESTS LIST */}
+              {tab === 'quests' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border border-primary/20 bg-[#070707] p-6 neon-border-subtle">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 style={{ fontFamily: 'var(--font-vt323)', fontSize: '2rem' }} className="uppercase">Active Missions</h3>
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs border border-primary/20 px-3 py-1 uppercase font-bold opacity-60">
+                        {quests.filter(q => q.status === 'done').length}/{quests.length} done
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-sm ${done ? 'line-through opacity-40' : ''}`}>{item.label}</div>
-                        <div className="text-[10px] opacity-40 mt-0.5">{item.duration} · +75 XP</div>
-                      </div>
-                      {isNext && <span className="text-[9px] border px-2 py-0.5 uppercase flex-shrink-0 font-bold" style={{ borderColor: `${accent.hex}40`, color: accent.hex }}>Next</span>}
-                    </button>
-                  );
-                })}
-              </div>
-              {morningDone && (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                  className="mt-4 border p-3 text-center text-sm font-bold"
-                  style={{ borderColor: `${accent.hex}40`, background: `${accent.hex}08`, color: accent.hex }}>
-                  ✓ Morning Protocol Complete — All Quests Unlocked
+                    </div>
+                  </div>
+
+                  {!morningDone && (
+                    <div className="border border-[#fb923c]/20 bg-[#fb923c]/5 p-3 mb-5 text-[#fb923c] text-xs font-mono flex items-center gap-2">
+                      <span className="text-base">⚠</span> Complete morning routine first to unlock all quests.
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {quests.map(q => {
+                      const bgColors: Record<QuestStatus, string> = { todo: 'transparent', inprogress: 'rgba(251,146,60,0.05)', done: `${accent.hex}08` };
+                      const borderColors: Record<QuestStatus, string> = { todo: 'rgba(255,255,255,0.06)', inprogress: 'rgba(251,146,60,0.3)', done: `${accent.hex}25` };
+
+                      return (
+                        <button key={q.id} onClick={() => handleQuestCycle(q.id)} disabled={q.locked}
+                          className={`w-full flex items-center gap-4 p-4 border text-left transition-all duration-200 ${q.locked ? 'opacity-10 cursor-not-allowed' : q.status === 'done' ? 'cursor-default' : 'cursor-pointer hover:brightness-125'}`}
+                          style={{ borderColor: q.locked ? 'rgba(255,255,255,0.04)' : borderColors[q.status], background: bgColors[q.status] }}>
+
+                          <div className="w-6 h-6 flex-shrink-0 border-2 flex items-center justify-center transition-all"
+                            style={{ borderColor: q.status === 'done' ? accent.hex : q.status === 'inprogress' ? '#fb923c' : 'rgba(255,255,255,0.15)', background: q.status === 'done' ? accent.hex : 'transparent' }}>
+                            {q.status === 'done' && <span className="text-background text-[10px] font-black">✓</span>}
+                            {q.status === 'inprogress' && <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 0.7 }} className="w-2 h-2 bg-[#fb923c]" />}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-semibold ${q.status === 'done' ? 'line-through opacity-40' : ''}`}>{q.title}</div>
+                            <div className="text-[10px] opacity-40 mt-0.5">+{q.xp} XP · Click to advance status</div>
+                          </div>
+
+                          <div className="flex-shrink-0 text-[10px] border px-2 py-1 font-bold uppercase"
+                            style={{
+                              borderColor: q.status === 'done' ? `${accent.hex}30` : q.status === 'inprogress' ? 'rgba(251,146,60,0.3)' : 'rgba(255,255,255,0.1)',
+                              color: q.status === 'done' ? accent.hex : q.status === 'inprogress' ? '#fb923c' : undefined,
+                              background: q.status === 'done' ? `${accent.hex}08` : q.status === 'inprogress' ? 'rgba(251,146,60,0.08)' : 'transparent',
+                            }}>
+                            {q.status === 'done' ? '✓ DONE' : q.status === 'inprogress' ? '⚡ IN PROGRESS' : 'TODO'}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </motion.div>
               )}
             </div>
 
-            {/* Right Column */}
+            {/* ── RIGHT COLUMN: BOSS & TERMINAL ── */}
             <div className="flex flex-col gap-4">
               {/* Boss */}
               <div className="border border-destructive/30 bg-[#070707] p-5 flex-1 relative overflow-hidden" style={{ boxShadow: `inset 0 0 20px rgba(255,0,60,0.05)` }}>
@@ -745,7 +806,7 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                     transition={{ type: "spring", bounce: 0 }} style={{ boxShadow: '0 0 8px rgba(255,0,60,0.7)' }} />
                 </div>
                 {bossHp > 0 ? (
-                  <img ref={bossRef} src="/assets/boss.png" alt="Boss" className="w-full max-h-36 object-contain mix-blend-screen opacity-60 hover:opacity-90 transition-opacity" />
+                  <img ref={bossRef} src="/assets/boss.png" alt="Boss" className="w-full max-h-48 object-contain mix-blend-screen opacity-70 hover:opacity-100 transition-opacity" />
                 ) : (
                   <div className="text-center py-6">
                     <div className="text-5xl mb-2">💀</div>
@@ -763,7 +824,7 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                       log.includes('LEVEL UP') ? 'font-bold' :
                       log.includes('ERROR') ? '' : ''
                     } style={{
-                      color: log.includes('ERROR') || log.includes('BOSS') ? '#ff003c' :
+                      color: log.includes('ERROR') || log.includes('BOSS') || log.includes('HP') ? '#ff003c' :
                              log.includes('LEVEL UP') || log.includes('DONE') || log.includes('MORNING') ? '#ff00cc' :
                              log.includes('DEEP WORK') || log.includes('BREAK') ? '#fb923c' :
                              `${accent.hex}90`
@@ -774,70 +835,6 @@ function DashboardView({ onLogout }: { onLogout: () => void }) {
                   <div ref={logsEndRef} />
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── QUESTS TAB ── */}
-        {tab === 'quests' && (
-          <motion.div key="quests" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-            className="border border-primary/20 bg-[#070707] p-6 neon-border-subtle">
-            <div className="flex justify-between items-center mb-6">
-              <h3 style={{ fontFamily: 'var(--font-vt323)', fontSize: '2rem' }} className="uppercase">Active Missions</h3>
-              <div className="flex items-center gap-3">
-                <div className="text-xs border border-primary/20 px-3 py-1 uppercase font-bold opacity-60">
-                  {quests.filter(q => q.status === 'done').length}/{quests.length} done
-                </div>
-                {/* Mini XP bar */}
-                <div className="hidden md:flex items-center gap-2 text-xs opacity-40">
-                  <span>XP</span>
-                  <div className="w-20 h-1 bg-black/50">
-                    <div className="h-full transition-all duration-500" style={{ width: `${(xp / 1000) * 100}%`, background: accent.hex }} />
-                  </div>
-                  <span>{xp}</span>
-                </div>
-              </div>
-            </div>
-
-            {!morningDone && (
-              <div className="border border-[#fb923c]/20 bg-[#fb923c]/5 p-3 mb-5 text-[#fb923c] text-xs font-mono flex items-center gap-2">
-                <span className="text-base">⚠</span> Complete morning routine first to unlock all quests.
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {quests.map(q => {
-                const colors: Record<QuestStatus, string> = { todo: 'opacity-40', inprogress: 'text-[#fb923c]', done: '' };
-                const bgColors: Record<QuestStatus, string> = { todo: 'transparent', inprogress: 'rgba(251,146,60,0.05)', done: `${accent.hex}08` };
-                const borderColors: Record<QuestStatus, string> = { todo: 'rgba(255,255,255,0.06)', inprogress: 'rgba(251,146,60,0.3)', done: `${accent.hex}25` };
-
-                return (
-                  <button key={q.id} onClick={() => handleQuestCycle(q.id)} disabled={q.locked}
-                    className={`w-full flex items-center gap-4 p-4 border text-left transition-all duration-200 ${q.locked ? 'opacity-10 cursor-not-allowed' : q.status === 'done' ? 'cursor-default' : 'cursor-pointer hover:brightness-125'}`}
-                    style={{ borderColor: q.locked ? 'rgba(255,255,255,0.04)' : borderColors[q.status], background: bgColors[q.status] }}>
-
-                    <div className="w-6 h-6 flex-shrink-0 border-2 flex items-center justify-center transition-all"
-                      style={{ borderColor: q.status === 'done' ? accent.hex : q.status === 'inprogress' ? '#fb923c' : 'rgba(255,255,255,0.15)', background: q.status === 'done' ? accent.hex : 'transparent' }}>
-                      {q.status === 'done' && <span className="text-background text-[10px] font-black">✓</span>}
-                      {q.status === 'inprogress' && <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 0.7 }} className="w-2 h-2 bg-[#fb923c]" />}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-semibold ${q.status === 'done' ? 'line-through opacity-40' : ''}`}>{q.title}</div>
-                      <div className="text-[10px] opacity-40 mt-0.5">+{q.xp} XP · Click to advance status</div>
-                    </div>
-
-                    <div className="flex-shrink-0 text-[10px] border px-2 py-1 font-bold uppercase"
-                      style={{
-                        borderColor: q.status === 'done' ? `${accent.hex}30` : q.status === 'inprogress' ? 'rgba(251,146,60,0.3)' : 'rgba(255,255,255,0.1)',
-                        color: q.status === 'done' ? accent.hex : q.status === 'inprogress' ? '#fb923c' : undefined,
-                        background: q.status === 'done' ? `${accent.hex}08` : q.status === 'inprogress' ? 'rgba(251,146,60,0.08)' : 'transparent',
-                      }}>
-                      {q.status === 'done' ? '✓ DONE' : q.status === 'inprogress' ? '⚡ IN PROGRESS' : 'TODO'}
-                    </div>
-                  </button>
-                );
-              })}
             </div>
           </motion.div>
         )}
